@@ -1,0 +1,14 @@
+get http://localhost:3000/api/flights
+
+###
+
+POST http://localhost:3000/api/flights
+Content-Type: application/json
+
+{
+    "depart_from": "Rome",
+    "destination": "Milan",
+    "departure_time": "2026-05-30 12:00:00+00",
+    "arrival_time": "2026-05-30 13:00:00+00",
+    "plane_id": 2
+}
