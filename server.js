@@ -90,6 +90,9 @@ app.post('/api/flights', async(req, res) => {
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.log("Error: ", err);
+        if (err.code == '23514') {
+            return res.status(400).send("Arrival time must be greater than departure time.")
+        }
         res.status(500).send("Server error");
     }
 });
@@ -118,6 +121,28 @@ app.put('/api/flights/:id', async(req, res) => {
         res.json(result);
     } catch (err) {
         console.log("Error: ", err);
+        if (err.code == '23514') {
+            return res.status(400).send("Arrival time must be greater than departure time.")
+        }
         res.status(500).send("Server error)");
+    }
+});
+
+app.delete('/api/flights/:id', async(req, res) => {
+    const id = req.params.id;
+    try {
+        const result = await pool.query('DELETE FROM Flights WHERE id = $1 RETURNING *', [id]);
+
+        if (result.rows.length == 0) {
+            return res.status(400).send("No flight with such ID.");
+        }
+
+        res.json({
+            message: "Flights successfully deleted",
+            data: result.rows[0]
+        });
+    } catch (err) {
+        console.log("Error: ", err);
+        res.status(500).send("Server error");
     }
 });
