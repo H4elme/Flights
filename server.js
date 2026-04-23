@@ -93,3 +93,31 @@ app.post('/api/flights', async(req, res) => {
         res.status(500).send("Server error");
     }
 });
+
+app.put('/api/flights/:id', async(req, res) => {
+    const id = req.params.id;
+    const newData = req.body;
+    try {
+        const oldData = await pool.query('SELECT departure_time, arrival_time FROM Flights WHERE id = $1', [id]);
+        if (oldData.rows.length === 0) {
+            return res.status(400).send("No flight with such ID.");
+        }
+        const oldRows = oldData.rows[0];
+        
+        const finalDeparture = newData.departure_time || oldRows.departure_time;
+        const finalArrival = newData.arrival_time || oldRows.arrival_time;
+        // console.log("AAAAA ", finalDeparture, finalArrival, id);
+        const request = 
+        `UPDATE Flights
+        SET departure_time = $1, arrival_time = $2
+        WHERE id = $3
+        RETURNING *`;
+
+        const result = await pool.query(request, [finalDeparture, finalArrival, id]);
+
+        res.json(result);
+    } catch (err) {
+        console.log("Error: ", err);
+        res.status(500).send("Server error)");
+    }
+});
