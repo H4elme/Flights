@@ -3,20 +3,21 @@ const pool = require('./db')
 
 const app = express();
 app.use(express.json());
+app.use(express.static('public'));
 
 const PORT = 3000;
 
 app.get('/api/flights', async(req, res) => {
     try {
-        const request = `
-        SELECT f.id, f.depart_from, f.destination, f.departure_time, f.arrival_time, p.model, string_agg(c.name || ' ' || c.surname, ', ') AS crew_member
+        const query = `
+        SELECT f.id, f.depart_from, f.destination, f.departure_time, f.arrival_time, p.model as plane, string_agg(c.name || ' ' || c.surname, ', ') AS crew_member
         FROM Flights f
         JOIN Planes p on f.plane_id = p.id
         JOIN crew_flight cf on f.id = cf.flight_id
         JOIN Crew c on cf.crew_id = c.id
         GROUP BY f.id, p.id`;
 
-        const result = await pool.query(request);
+        const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
         console.error("Error", err);
@@ -27,10 +28,10 @@ app.get('/api/flights', async(req, res) => {
 app.get('/api/planes/:id', async(req, res) => {
     const plane_id = req.params.id;
     try {
-        const request = `SELECT p.model, p.capacity
+        const query = `SELECT p.model, p.capacity
         FROM Planes p
         WHERE p.id = $1`;
-        const result = await pool.query(request, [plane_id]);
+        const result = await pool.query(query, [plane_id]);
         console.log(res.status);
         console.log(res.ok);
         if (!result.rows.length) {
@@ -50,8 +51,8 @@ app.listen(PORT, () => {
 
 app.get('/api/planes', async(req, res) => {
     try {
-        const request = `SELECT * FROM Planes`;
-        const result = await pool.query(request);
+        const query = `SELECT * FROM Planes`;
+        const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
         console.log("Error: ", err);
@@ -62,11 +63,11 @@ app.get('/api/planes', async(req, res) => {
 app.get('/api/flights/:id', async(req, res) => {
     try {
         const id = req.params.id;
-        const request = 
+        const query = 
         `SELECT * 
         FROM Flights
         WHERE id = $1`;
-        const result = await pool.query(request, [id]);
+        const result = await pool.query(query, [id]);
         if (!result.rows.length) {
             res.status(400).send("No flight with such ID.");
             return;
@@ -79,14 +80,24 @@ app.get('/api/flights/:id', async(req, res) => {
 });
 
 app.post('/api/flights', async(req, res) => {
-    const {depart_from, destination, departure_time, arrival_time, plane_id } = req.body;
+    const {depart_from, destination, departure_time, arrival_time, plane_id, crew_id} = req.body;
     try {
-        const request = 
-        `INSERT INTO Flights 
-        (depart_from, destination, departure_time, arrival_time, plane_id) VALUES
-        ($1, $2, $3, $4, $5)
-        RETURNING *`;
-        const result = await pool.query(request, [depart_from, destination, departure_time, arrival_time, plane_id]);
+        const query = 
+        `
+        WITH inserted_flight AS (
+            INSERT INTO Flights 
+            (depart_from, destination, departure_time, arrival_time, plane_id) VALUES
+            ($1, $2, $3, $4, $5)
+            RETURNING id
+        )
+        INSERT INTO crew_flight (flight_id, crew_id)
+        SELECT id, $6
+        FROM inserted_flight
+        RETURNING *;
+        `;
+
+        const result = await pool.query(query, [depart_from, destination, departure_time, arrival_time, plane_id, crew_id]);
+        
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.log("Error: ", err);
@@ -110,13 +121,13 @@ app.put('/api/flights/:id', async(req, res) => {
         const finalDeparture = newData.departure_time || oldRows.departure_time;
         const finalArrival = newData.arrival_time || oldRows.arrival_time;
         // console.log("AAAAA ", finalDeparture, finalArrival, id);
-        const request = 
+        const query = 
         `UPDATE Flights
         SET departure_time = $1, arrival_time = $2
         WHERE id = $3
         RETURNING *`;
 
-        const result = await pool.query(request, [finalDeparture, finalArrival, id]);
+        const result = await pool.query(query, [finalDeparture, finalArrival, id]);
 
         res.json(result);
     } catch (err) {
@@ -131,7 +142,12 @@ app.put('/api/flights/:id', async(req, res) => {
 app.delete('/api/flights/:id', async(req, res) => {
     const id = req.params.id;
     try {
+        await pool.query('BEGIN');
+        await pool.query('DELETE FROM crew_flight WHERE flight_id = $1', [id]);
+
         const result = await pool.query('DELETE FROM Flights WHERE id = $1 RETURNING *', [id]);
+
+        await pool.query('COMMIT');
 
         if (result.rows.length == 0) {
             return res.status(400).send("No flight with such ID.");
