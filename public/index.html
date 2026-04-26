@@ -2,7 +2,10 @@
 
 <style>
     input{
-        width: 150px;
+        width: 170px;
+    }
+    select{
+        width: 170px;
     }
     .overlay{
         position: fixed;
@@ -25,13 +28,22 @@
         z-index: 11;
     }
     .formRow {
-        margin-bottom: 5px;
         display: flex;
-        justify-content: space-between;
-        gap: 20px;
+        align-items: center; 
+        justify-content: flex-start;
+        gap: 10px; 
+        margin-bottom: 8px;
+    }
+
+    .formRow label {
+        width: 130px;
+        flex-shrink: 0;
     }
     .hidden {
         display: none;
+    }
+    .crewSelect {
+
     }
 </style>
 
@@ -43,8 +55,9 @@
     <div class = "formRow"><label>Arrives at: </label><input id = "destination_input"> </div>
     <div class = "formRow"><label>Departure time: </label><input type = "datetime-local" id = "departure_time_input"> </div>
     <div class = "formRow"><label>Arrival time: </label><input type = "datetime-local" id = "arrival_time_input"> </div>
-    <div class = "formRow"><label>Plane ID: </label><input id = plane_id_input> </div>
-    <div class = "formRow"><label>Crew member ID: </label><input type = "number" id = crew_id_input> </div>
+    <div class = "formRow"><label>Plane ID: </label><select id = plane_select><option value = ""></option></select></div>
+    <div id = "crew_selector_container"></div>
+    <button id = "add_crew_btn">Add crew</button>
     <div style = "display: flex; margin-top: 10px; margin-bottom: -25px;justify-content: center; align-items: center;"><button id = "add_btn">Add</button></div>
 </div>
 

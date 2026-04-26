@@ -79,9 +79,22 @@ app.get('/api/flights/:id', async(req, res) => {
     }
 });
 
+app.get('/api/crew', async(req, res) => {
+    try {
+        const query = 'SELECT * FROM Crew';
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (err) {
+        console.log("Error: ", err);
+        res.status(500).send("Server error");
+    }
+});
+
 app.post('/api/flights', async(req, res) => {
     const {depart_from, destination, departure_time, arrival_time, plane_id, crew_id} = req.body;
     try {
+        // console.log(Array.isArray(crew_id));
+        // console.log(typeof(crew_id[0]));
         const query = 
         `
         WITH inserted_flight AS (
@@ -91,7 +104,7 @@ app.post('/api/flights', async(req, res) => {
             RETURNING id
         )
         INSERT INTO crew_flight (flight_id, crew_id)
-        SELECT id, $6
+        SELECT id, unnest($6::int[])
         FROM inserted_flight
         RETURNING *;
         `;
@@ -120,7 +133,6 @@ app.put('/api/flights/:id', async(req, res) => {
         
         const finalDeparture = newData.departure_time || oldRows.departure_time;
         const finalArrival = newData.arrival_time || oldRows.arrival_time;
-        // console.log("AAAAA ", finalDeparture, finalArrival, id);
         const query = 
         `UPDATE Flights
         SET departure_time = $1, arrival_time = $2
