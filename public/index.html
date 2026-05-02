@@ -45,18 +45,32 @@
     .crewSelect {
 
     }
+    .error {
+        color: red;
+        font-size: 14px;
+    }
 </style>
 
 <!-- <div id = "status-message"></div> -->
 <div class = "overlay hidden" id = "overlay"></div>
 <div class = "addForm hidden" id = "add_form">
     <button style = "position: absolute; top: 10px; right: 10px;" id = "close_btn">X</button>
-    <div class = "formRow"><label>Departs from: </label><input id = "depart_from_input"></div>
-    <div class = "formRow"><label>Arrives at: </label><input id = "destination_input"> </div>
-    <div class = "formRow"><label>Departure time: </label><input type = "datetime-local" id = "departure_time_input"> </div>
+    <div class = "formRow"><label>Departs from: </label><input id = "depart_from_input" placeholder = "Warsaw"></div>
+    <div class = "error" id = "depart_from_error" ></div>
+
+    <div class = "formRow"><label>Arrives at: </label><input id = "destination_input" placeholder = "Berlin"> </div>
+    <div class = "error" id = "arrive_at_error" ></div>
+    
+    <div class = "formRow"><label>Departure time: </label><input type = "datetime-local" id = "departure_time_input" selected = "selected"> </div>
+    <div class = "error" id = "departure_time_error" ></div>
+
     <div class = "formRow"><label>Arrival time: </label><input type = "datetime-local" id = "arrival_time_input"> </div>
+    <div class = "error" id = "arrival_time_error" ></div>
+    
     <div class = "formRow"><label>Plane ID: </label><select id = plane_select><option value = ""></option></select></div>
     <div id = "crew_selector_container"></div>
+
+    <div class = "error" id = "crew_error"></div>
     <button id = "add_crew_btn">Add crew</button>
     <div style = "display: flex; margin-top: 10px; margin-bottom: -25px;justify-content: center; align-items: center;"><button id = "add_btn">Add</button></div>
 </div>

@@ -115,7 +115,16 @@ app.post('/api/flights', async(req, res) => {
     } catch (err) {
         console.log("Error: ", err);
         if (err.code == '23514') {
-            return res.status(400).send("Arrival time must be greater than departure time.")
+            return res.status(400).json({
+                code: 23514,
+                message: "Arrival time must be greater than departure time."
+            })
+        }
+        if (err.code == '23505') {
+            return res.status(400).json({
+                code: 23505,
+                message: "Crew members must be unique."
+            })
         }
         res.status(500).send("Server error");
     }

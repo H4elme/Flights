@@ -7,6 +7,10 @@ async function refresh_flights() {
 
         tableBody.innerHTML = '';
 
+        if (flights.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="8">No flights available</td></tr>';
+        } 
+
         flights.forEach(flight => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -17,14 +21,19 @@ async function refresh_flights() {
             <td>${new Date(flight.arrival_time).toLocaleString()}</td>
             <td>${flight.plane}</td>
             <td>${flight.crew_member}</td>
-            <td><button onclick = 'delete_flight(${flight.id})'>Delete</button></td>
+            <td><button id = "delete_btn_${flight.id}">Delete</button></td>
             `;
+            const button = row.querySelector('button');
             tableBody.appendChild(row);
+            button.addEventListener('click', async () => {
+                await delete_flight(flight.id);
+            });
         });
     } catch (err) {
         console.error('Frontend error: ', err);
     }
 }
+
 
 async function delete_flight(id) {
     if (!confirm(`Are you sure you want to delete flight #${id}?`)) {
@@ -47,6 +56,8 @@ async function delete_flight(id) {
         console.error('Frontend error: ', err);
     }
 }
+
+// document.getElementById('dele')
 
 document.getElementById('add_flight_btn').addEventListener('click', async function() {
     document.getElementById('add_form').style.display = 'block';
@@ -114,17 +125,51 @@ async function close_form() {
 
 async function add_flight() {
     try {
+        let hasError = false;
+
+        document.querySelectorAll(".error").forEach(e => e.textContent = "");
+
         const depart_from = document.getElementById('depart_from_input').value;
         const destination = document.getElementById('destination_input').value;
         const departure_time = document.getElementById('departure_time_input').value;
         const arrival_time = document.getElementById('arrival_time_input').value;
         const plane_id = document.getElementById('plane_select').value;
 
+        if (!depart_from) {
+            document.getElementById('depart_from_error').textContent = "Departure city is required";
+            hasError = true;
+        }
+
+        if (!destination) {
+            document.getElementById('arrive_at_error').textContent = "Arrival city is required";
+            hasError = true;
+        }
+
+        if (!departure_time) {
+            document.getElementById('departure_time_error').textContent = "Departure time is required";
+            hasError = true;
+        }
+
+        if (!arrival_time) {
+            document.getElementById('arrival_time_error').textContent = "Arrival time is required";
+            hasError = true;
+        }
+
+        console.log("Dep time:", departure_time);
+
+        
         const crew_nodes = document.querySelectorAll('.crew_select');
         const crew_ids = Array.from(crew_nodes)
-                                .map(node => node.value);
+        .map(node => node.value);
+        if (crew_ids.length == 0) {
+            document.getElementById('crew_error').textContent = "At least one crew member required.";
+            hasError = true;
+        }
         // const crew_id_input = document.getElementById('crew_id_input').value;
-        console.log("AAAA", crew_ids);
+        
+        
+        if (hasError) return;
+
         const response = await fetch('/api/flights', {
             method: 'POST',
             headers: new Headers({'Content-Type':'application/json'}),
@@ -143,7 +188,18 @@ async function add_flight() {
             close_form();
         }
             else {
-                console.error("Frontend error.");
+                const error = await response.json();
+                if (error.code == 23514) {//"Arrival time must be greater than departure time.") {
+                    document.getElementById('arrival_time_error').textContent = error.message;
+                } 
+                if (error.code == 23505){
+                    document.getElementById('crew_error').textContent = error.message;
+                }
+                console.error("Frontend error: ", error.message);
+                // console.log("AAAA", response.status, response.statusText);
+                // if (response.error == 23505) {
+                //     document.getElementById('crew_error').textContent = "";
+                // }
             }
     } catch (err) {
         console.log("Error: ", err);
@@ -165,7 +221,7 @@ async function fill_select(select, http, display) {
     const response = await fetch(http);
     const rows = await response.json();
 
-    console.log(rows, Array.isArray(rows));
+    // console.log(rows, Array.isArray(rows));
     
     rows.forEach(row => {
         const opt = document.createElement('option');
@@ -177,4 +233,4 @@ async function fill_select(select, http, display) {
 }
 refresh_flights();
 
-// TODO: change delete_btn to eventListener, let POST take multiple crew members, add error messages to add_flight
+// TODO: change add error messages to add_flight
